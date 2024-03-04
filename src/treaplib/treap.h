@@ -9,6 +9,33 @@ template <typename T> struct TreapNode {
   TreapNode *right;
 
   TreapNode(T k) : key(k), priority(rand()), left(nullptr), right(nullptr) {}
+
+  // Copy constructor
+  TreapNode(const TreapNode<T> &other)
+      : key(other.key), priority(other.priority), left(nullptr),
+        right(nullptr) {
+    // Copy left and right subtrees
+    if (other.left)
+      left = new TreapNode<T>(*other.left);
+    if (other.right)
+      right = new TreapNode<T>(*other.right);
+  }
+
+  // Copy assignment operator
+  TreapNode<T> &operator=(const TreapNode<T> &other) {
+    if (this != &other) {
+      key = other.key;
+      priority = other.priority;
+      delete left;
+      delete right;
+      // Copy left and right subtrees
+      if (other.left)
+        left = new TreapNode<T>(*other.left);
+      if (other.right)
+        right = new TreapNode<T>(*other.right);
+    }
+    return *this;
+  }
 };
 
 template <typename T> class Treap {
@@ -47,6 +74,26 @@ private:
 
 public:
   Treap() : root(nullptr) {}
+
+  // Copy constructor
+  Treap(const Treap<T> &other) : root(nullptr) {
+    if (other.root)
+      root = new TreapNode<T>(*other.root);
+  }
+
+  // Copy assignment operator
+  Treap<T> &operator=(const Treap<T> &other) {
+    if (this != &other) {
+      delete root;
+      root = nullptr;
+      if (other.root)
+        root = new TreapNode<T>(*other.root);
+    }
+    return *this;
+  }
+
+  // Destructor
+  ~Treap() { delete root; }
 
   void insert(T key) {
     if (!root) {
