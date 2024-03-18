@@ -73,3 +73,46 @@ TEST(TreapCopyAssignmentTest, CopyAssignmentOperatorWorks) {
   EXPECT_FALSE(treap2.search(20));
   EXPECT_FALSE(treap2.search(15));
 }
+
+TEST(TreapTest, MoveConstructor) {
+    Treap<int> t1;
+    t1.insert(5);
+    t1.insert(10);
+    t1.insert(3);
+
+    Treap<int> t2(std::move(t1));
+
+    // t1 should be empty after moving its resources to t2
+    EXPECT_FALSE(t1.search(5));
+    EXPECT_FALSE(t1.search(10));
+    EXPECT_FALSE(t1.search(3));
+
+    // t2 should have the same elements as t1 had
+    EXPECT_TRUE(t2.search(5));
+    EXPECT_TRUE(t2.search(10));
+    EXPECT_TRUE(t2.search(3));
+}
+
+TEST(TreapTest, MoveAssignmentOperator) {
+    Treap<int> t1;
+    t1.insert(5);
+    t1.insert(10);
+    t1.insert(3);
+
+    Treap<int> t2;
+    t2.insert(20);
+    t2.insert(15);
+    t2.insert(8);
+
+    t2 = std::move(t1);
+
+    // t1 should be empty after moving its resources to t2
+    EXPECT_FALSE(t1.search(5));
+    EXPECT_FALSE(t1.search(10));
+    EXPECT_FALSE(t1.search(3));
+
+    // t2 should have the same elements as t1 had
+    EXPECT_TRUE(t2.search(5));
+    EXPECT_TRUE(t2.search(10));
+    EXPECT_TRUE(t2.search(3));
+}

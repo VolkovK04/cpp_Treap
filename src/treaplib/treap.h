@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <type_traits>
+#include <utility>
 
 template <typename T> struct TreapNode {
   T key;
@@ -21,6 +22,14 @@ template <typename T> struct TreapNode {
       right = new TreapNode<T>(*other.right);
   }
 
+    // Move constructor
+  TreapNode(TreapNode<T> &&other) noexcept
+      : key(std::move(other.key)), priority(std::move(other.priority)),
+        left(std::move(other.left)), right(std::move(other.right)) {
+    other.left = nullptr;
+    other.right = nullptr;
+  } 
+
   // Copy assignment operator
   TreapNode<T> &operator=(const TreapNode<T> &other) {
     if (this != &other) {
@@ -33,6 +42,21 @@ template <typename T> struct TreapNode {
         left = new TreapNode<T>(*other.left);
       if (other.right)
         right = new TreapNode<T>(*other.right);
+    }
+    return *this;
+  }
+
+    // Move assignment operator
+  TreapNode<T> &operator=(TreapNode<T> &&other) noexcept {
+    if (this != &other) {
+      key = std::move(other.key);
+      priority = std::move(other.priority);
+      delete left;
+      delete right;
+      left = std::move(other.left);
+      right = std::move(other.right);
+      other.left = nullptr;
+      other.right = nullptr;
     }
     return *this;
   }
@@ -81,6 +105,11 @@ public:
       root = new TreapNode<T>(*other.root);
   }
 
+  // Move constructor
+  Treap(Treap<T> &&other) noexcept : root(std::move(other.root)) {
+    other.root = nullptr;
+  }
+
   // Copy assignment operator
   Treap<T> &operator=(const Treap<T> &other) {
     if (this != &other) {
@@ -88,6 +117,16 @@ public:
       root = nullptr;
       if (other.root)
         root = new TreapNode<T>(*other.root);
+    }
+    return *this;
+  }
+
+  // Move assignment operator
+  Treap<T> &operator=(Treap<T> &&other) noexcept {
+    if (this != &other) {
+      delete root;
+      root = std::move(other.root);
+      other.root = nullptr;
     }
     return *this;
   }
