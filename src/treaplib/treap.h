@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <iostream>
+#include <stack>
 #include <type_traits>
 #include <utility>
 
@@ -15,51 +16,44 @@ template <typename T> struct TreapNode {
   TreapNode(const TreapNode<T> &other)
       : key(other.key), priority(other.priority), left(nullptr),
         right(nullptr) {
-    // Copy left and right subtrees
     if (other.left)
       left = new TreapNode<T>(*other.left);
     if (other.right)
       right = new TreapNode<T>(*other.right);
   }
 
-    // Move constructor
+  // Move constructor
   TreapNode(TreapNode<T> &&other) noexcept
       : key(std::move(other.key)), priority(std::move(other.priority)),
-        left(std::move(other.left)), right(std::move(other.right)) {
+        left(other.left), right(other.right) {
     other.left = nullptr;
     other.right = nullptr;
-  } 
+  }
 
   // Copy assignment operator
   TreapNode<T> &operator=(const TreapNode<T> &other) {
     if (this != &other) {
-      key = other.key;
-      priority = other.priority;
-      delete left;
-      delete right;
-      // Copy left and right subtrees
-      if (other.left)
-        left = new TreapNode<T>(*other.left);
-      if (other.right)
-        right = new TreapNode<T>(*other.right);
+      TreapNode<T> temp(other); // Copy-and-swap idiom
+      std::swap(key, temp.key);
+      std::swap(priority, temp.priority);
+      std::swap(left, temp.left);
+      std::swap(right, temp.right);
     }
     return *this;
   }
 
-    // Move assignment operator
+  // Move assignment operator
   TreapNode<T> &operator=(TreapNode<T> &&other) noexcept {
     if (this != &other) {
-      key = std::move(other.key);
-      priority = std::move(other.priority);
-      delete left;
-      delete right;
-      left = std::move(other.left);
-      right = std::move(other.right);
-      other.left = nullptr;
-      other.right = nullptr;
+      std::swap(key, other.key);
+      std::swap(priority, other.priority);
+      std::swap(left, other.left);
+      std::swap(right, other.right);
     }
     return *this;
   }
+
+  ~TreapNode() = default;
 };
 
 template <typename T> class Treap {
@@ -96,6 +90,14 @@ private:
     }
   }
 
+  void clear(TreapNode<T> *node) {
+    if (node) {
+      clear(node->left);
+      clear(node->right);
+      delete node;
+    }
+  }
+
 public:
   Treap() : root(nullptr) {}
 
@@ -106,17 +108,13 @@ public:
   }
 
   // Move constructor
-  Treap(Treap<T> &&other) noexcept : root(std::move(other.root)) {
-    other.root = nullptr;
-  }
+  Treap(Treap<T> &&other) noexcept : root(other.root) { other.root = nullptr; }
 
   // Copy assignment operator
   Treap<T> &operator=(const Treap<T> &other) {
     if (this != &other) {
-      delete root;
-      root = nullptr;
-      if (other.root)
-        root = new TreapNode<T>(*other.root);
+      Treap temp(other); // Copy-and-swap idiom
+      std::swap(root, temp.root);
     }
     return *this;
   }
@@ -124,15 +122,15 @@ public:
   // Move assignment operator
   Treap<T> &operator=(Treap<T> &&other) noexcept {
     if (this != &other) {
-      delete root;
-      root = std::move(other.root);
+      clear(root);
+      root = other.root;
       other.root = nullptr;
     }
     return *this;
   }
 
   // Destructor
-  ~Treap() { delete root; }
+  ~Treap() { clear(root); }
 
   void insert(T key) {
     if (!root) {
@@ -141,7 +139,8 @@ public:
     }
     if (search(key))
       return; // Ensure no duplicate keys
-    TreapNode<T> *left, *right;
+    TreapNode<T> *left;
+    TreapNode<T> *right;
     split(root, key, left, right);
     root = merge(merge(left, new TreapNode<T>(key)), right);
   }
@@ -157,13 +156,15 @@ public:
     else {
       TreapNode<T> *temp = node;
       node = merge(node->left, node->right);
+      temp->left = nullptr;
+      temp->right = nullptr;
       delete temp;
     }
   }
 
   void erase(T key) { erase(key, root); }
 
-  bool search(T key) {
+  bool search(T key) const {
     TreapNode<T> *curr = root;
     while (curr) {
       if (key == curr->key)
@@ -176,7 +177,7 @@ public:
     return false;
   }
 
-  void inorderTraversal(TreapNode<T> *curr) {
+  void inorderTraversal(TreapNode<T> *curr) const {
     if (curr) {
       inorderTraversal(curr->left);
       std::cout << curr->key << " ";
@@ -184,8 +185,54 @@ public:
     }
   }
 
-  void printInorder() {
+  void printInorder() const {
     inorderTraversal(root);
     std::cout << std::endl;
   }
+
+  class Iterator {
+  private:
+    TreapNode<T> *current;
+    std::stack<TreapNode<T> *> nodes;
+
+    void pushLeft(TreapNode<T> *node) {
+      while (node) {
+        nodes.push(node);
+        node = node->left;
+      }
+    }
+
+  public:
+    Iterator(TreapNode<T> *root) : current(nullptr) {
+      pushLeft(root);
+      ++(*this); // Move to the first element
+    }
+
+    T &operator*() { return current->key; }
+
+    T *operator->() { return &(current->key); }
+
+    Iterator &operator++() {
+      if (nodes.empty()) {
+        current = nullptr;
+      } else {
+        current = nodes.top();
+        nodes.pop();
+        pushLeft(current->right);
+      }
+      return *this;
+    }
+
+    bool operator==(const Iterator &other) const {
+      return current == other.current;
+    }
+
+    bool operator!=(const Iterator &other) const {
+      return current != other.current;
+    }
+  };
+
+  Iterator begin() const { return Iterator(root); }
+
+  Iterator end() const { return Iterator(nullptr); }
 };
