@@ -34,10 +34,7 @@ template <typename T> struct TreapNode {
   TreapNode<T> &operator=(const TreapNode<T> &other) {
     if (this != &other) {
       TreapNode<T> temp(other); // Copy-and-swap idiom
-      std::swap(key, temp.key);
-      std::swap(priority, temp.priority);
-      std::swap(left, temp.left);
-      std::swap(right, temp.right);
+      std::swap(other);
     }
     return *this;
   }
@@ -45,15 +42,22 @@ template <typename T> struct TreapNode {
   // Move assignment operator
   TreapNode<T> &operator=(TreapNode<T> &&other) noexcept {
     if (this != &other) {
-      std::swap(key, other.key);
-      std::swap(priority, other.priority);
-      std::swap(left, other.left);
-      std::swap(right, other.right);
+      std::swap(other);
     }
     return *this;
   }
+        
 
   ~TreapNode() = default;
+
+  private:
+    void swap(Array& other) noexcept
+    {
+      std::swap(key, other.key);
+      std::swap(priority, other.priority);
+      std::swap(left, other.left);
+      std::swap(right, other.right); 
+    }
 };
 
 template <typename T> class Treap {
